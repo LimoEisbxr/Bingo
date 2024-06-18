@@ -11,116 +11,29 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model UntisUser {
-    id                  String               @id @default(cuid())
-    createdAt           DateTime             @default(now())
-    discordId           String               @unique
-    discordUsername     String
-    untisSchoolName     String
-    untisUsername       String
-    untisPassword       String
-    untisUrl            String
-    primaryUser         primaryUser?
-    class               Class?               @relation(fields: [className], references: [className])
-    className           String?
-    lessonNotifierDaily lessonNotifierDaily?
+model BingoUser {
+    id          String      @id @default(cuid())
+    createdAt   DateTime    @default(now())
+    googleId    String      @unique
+    googleName  String?
+    googleEmail String?
+    games       BingoGame[]
 }
 
-model lessonNotifier {
-    id                 String   @id @default(cuid())
-    createdAt          DateTime @default(now())
-    discordId          String
-    channelId          String
-    lessonStart        DateTime
-    reminderTimeOffset Int
-}
-
-model primaryUser {
-    id            String    @id @default(cuid())
-    discordId     String    @unique
-    UntisUser     UntisUser @relation(fields: [discordId], references: [discordId])
-    primaryUserId String?
-}
-
-model Lesson {
-    id             String   @id @default(cuid())
-    lessonId       Int      @unique
-    lessonCode     String?
-    date           DateTime
-    startTime      String
-    endTime        String
-    lessonState    String?
-    rescheduleInfo String?
-    classId        Int?
-    class          Class?   @relation(fields: [classId], references: [classId], onUpdate: NoAction, onDelete: SetDefault)
-    teacherId      Int?
-    teacher        Teacher? @relation(fields: [teacherId], references: [teacherId], onUpdate: NoAction, onDelete: SetDefault)
-    sg             String?
-    roomId         Int?
-    room           Room?    @relation(fields: [roomId], references: [roomId], onUpdate: NoAction, onDelete: SetDefault)
-    subjectId      Int?
-    subject        Subject? @relation(fields: [subjectId], references: [subjectId], onUpdate: NoAction, onDelete: SetDefault)
-}
-
-model Subject {
-    id            String   @id @default(cuid())
-    subjectId     Int      @unique
-    name          String
-    longName      String?
-    alternateName String?
-    active        Boolean?
-    lessons       Lesson[]
-}
-
-model Teacher {
-    id        String   @id @default(cuid())
-    teacherId Int      @unique
+model BingoGame {
+    id        String        @id @default(cuid())
+    createdAt DateTime      @default(now())
     name      String
-    foreName  String
-    longName  String
-    title     String?
-    active    Boolean?
-    classes   Class[]
-    lessons   Lesson[]
+    users     BingoUser[]
+    squares   BingoSquare[]
 }
 
-model Class {
-    id        String      @id @default(cuid())
-    classId   Int         @unique
-    className String      @unique
-    longName  String?
-    lessons   Lesson[]
-    untisUser UntisUser[]
-    teacherId Int?        @map("teacher_id")
-    teacher   Teacher?    @relation(fields: [teacherId], references: [teacherId])
-}
-
-model Room {
-    id       String   @id @default(cuid())
-    roomId   Int      @unique
-    name     String?
-    longName String?
-    lessons  Lesson[]
-}
-
-model lessonNotifierDaily {
-    id          String    @id @default(cuid())
-    UntisUser   UntisUser @relation(fields: [discordId], references: [discordId])
-    discordId   String    @unique
-    perDM       Boolean?
-    channelId   String
-    guildId     String?
-    onlyInBreak Boolean?
-    offset      Int?
-}
-
-model WoLRemoteUser {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
-    discordId String   @unique
-    sshhost   String
-    sshport   Int
-    sshuser   String
-    sshkey    String
-    targetmac String
+model BingoSquare {
+    id        String    @id @default(cuid())
+    createdAt DateTime  @default(now())
+    game      BingoGame @relation(fields: [gameId], references: [id])
+    gameId    String
+    userId    String?
+    value     String
+    checked   Boolean   @default(false)
 }
