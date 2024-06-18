@@ -37,3 +37,25 @@ model BingoSquare {
     value     String
     checked   Boolean   @default(false)
 }
+
+model User {
+    id    Int     @id @default(autoincrement())
+    name  String
+    Click Click[]
+}
+
+model BingoCard {
+    id    Int     @id @default(autoincrement())
+    board String
+    Click Click[]
+}
+
+model Click {
+    id          Int       @id @default(autoincrement())
+    userId      Int
+    bingoCardId Int
+    row         Int
+    col         Int
+    User        User      @relation(fields: [userId], references: [id])
+    BingoCard   BingoCard @relation(fields: [bingoCardId], references: [id])
+}

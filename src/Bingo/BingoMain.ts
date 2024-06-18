@@ -1,29 +1,68 @@
 import { PrismaClient } from '@prisma/client';
+import express from 'express';
 
 const prisma = new PrismaClient();
+const app = express();
+const port = 3000;
 
-async function getBingoGameById(gameId: string) {
-    return await prisma.bingoGame.findUnique({
-        where: { id: gameId },
-        include: { squares: true },
+app.use(express.json());
+
+app.post('/create-bingo-card', async (req, res) => {
+    const board = req.body.board;
+
+    const newCard = await prisma.bingoCard.create({
+        data: {
+            board: JSON.stringify(board),
+        },
     });
-}
 
-async function displayBingoField(gameId: string) {
-    const game = await getBingoGameById(gameId);
-    if (!game) {
-        console.log('Spiel nicht gefunden.');
-        return;
+    res.json(newCard);
+});
+
+app.get('/bingo-cards', async (req, res) => {
+    const cards = await prisma.bingoCard.findMany();
+    res.json(cards);
+});
+
+app.post('/click-card', async (req, res) => {
+    const { userId, bingoCardId, row, col } = req.body;
+
+    // Add the click to the database
+    await prisma.click.create({
+        data: {
+            userId,
+            bingoCardId,
+            row,
+            col,
+        },
+    });
+
+    // Count the number of users who have clicked this card
+    const totalUsers = await prisma.user.count();
+    const clickedUsers = await prisma.click.count({
+        where: {
+            bingoCardId,
+            row,
+            col,
+        },
+    });
+
+    // If at least 50% of users have clicked this card, mark it as clicked for all users
+    if (clickedUsers >= totalUsers / 2) {
+        await prisma.click.createMany({
+            data: Array.from({ length: totalUsers }, (_, i) => ({
+                userId: i + 1,
+                bingoCardId,
+                row,
+                col,
+            })),
+            skipDuplicates: true,
+        });
     }
-    console.log(`Bingo-Spiel: ${game.name}`);
-    game.squares.forEach((square, index) => {
-        console.log(
-            `${index + 1}: ${square.value} - ${
-                square.checked ? 'Geprüft' : 'Nicht geprüft'
-            }`
-        );
-    });
-}
 
-// Beispielaufruf, ersetze 'deine_spiel_id' mit einer tatsächlichen Spiel-ID
-displayBingoField('deine_spiel_id').catch(console.error);
+    res.json({ success: true });
+});
+
+app.listen(port, () => {
+    console.log(`Server is running at http://localhost:${port}`);
+});
